@@ -6,8 +6,12 @@
 #include <thread>
 #include <future>
 #include <vector>
+#include <numeric>
 
 static const bool printVectors = false;
+static const bool printIterInfo = false;
+
+static const unsigned int iterations = 1000000;
 static const unsigned int vecSize = 4 * 10000;
 
 void printNFloatVector(const char* name, unsigned int n, float* v) {
@@ -69,16 +73,44 @@ int main()
   printNFloatVector("v1", vecSize, v1);
   printNFloatVector("v2", vecSize, v2);
 
-  std::chrono::duration<double, std::milli> elapsed_normal;
-  std::chrono::duration<double, std::milli> elapsed_simd;
-  auto future = std::async(operate, res, v1, v2);
-  auto future_simd = std::async(operate_simd, res, v1, v2);
-  elapsed_normal = future.get();
-  elapsed_simd = future_simd.get();
-  std::cout << std::fixed;
-  std::cout << "Operate elapsed time: " << elapsed_normal.count() << std::endl;
-  std::cout << "Operate SIMD elapsed time: " << elapsed_simd.count() << std::endl;
-  std::cout.unsetf(std::ios::fixed);
+  std::vector<double> diffs_vector;
+
+  for (int i = 0; i < iterations; ++i) {
+    std::chrono::duration<double, std::milli> elapsed_normal;
+    std::chrono::duration<double, std::milli> elapsed_simd;
+
+    auto future = std::async(operate, res, v1, v2);
+    auto future_simd = std::async(operate_simd, res, v1, v2);
+    elapsed_normal = future.get();
+    elapsed_simd = future_simd.get();
+    /*
+    std::packaged_task<std::chrono::duration<double, std::milli>(float*, float*, float*)> job1(operate);
+    std::packaged_task<std::chrono::duration<double, std::milli>(float*, float*, float*)> job2(operate_simd);
+    std::future<std::chrono::duration<double, std::milli>> future = job1.get_future();
+    std::future<std::chrono::duration<double, std::milli>> future_simd = job2.get_future();
+    std::thread worker1(std::move(job1));
+    std::thread worker2(std::move(job2));
+    worker1.join();
+    worker2.join();
+    elapsed_normal = future.get();
+    elapsed_simd = future_simd.get();
+    */
+    double diff = elapsed_normal.count() - elapsed_simd.count();
+    diffs_vector.push_back(diff);
+
+    std::cout << "Iteration: " << i + 1 << std::endl;
+    if (printIterInfo) {
+      std::cout << std::fixed;
+      std::cout << "\tOperate elapsed time: " << elapsed_normal.count() << std::endl;
+      std::cout << "\tOperate SIMD elapsed time: " << elapsed_simd.count() << std::endl;
+      std::cout << "\tDIFF: " << diff << std::endl;
+      std::cout.unsetf(std::ios::fixed);
+    }
+  }
+
+  double total = std::accumulate(diffs_vector.begin(), diffs_vector.end(), 0.0f);
+  std::cout << "TOTAL: " << total << std::endl;
+  std::cout << "AVERAGE: " << total / iterations << std::endl;
 
   printNFloatVector("res", vecSize, res);
   printNFloatVector("res_simd", vecSize, res);
