@@ -53,11 +53,10 @@ std::chrono::duration<double, std::micro> operate_simd(float* res, float* v1, fl
 int main()
 {
   static const unsigned int iterations = 1000000;
-
-  float v1[vecSize];
-  float v2[vecSize];
-  float res[vecSize];
-  float res_simd[vecSize];
+  alignas(16) float v1[vecSize];
+  alignas(16) float v2[vecSize];
+  alignas(16) float res[vecSize];
+  alignas(16) float res_simd[vecSize];
 
   static_assert((sizeof(v1) / sizeof(float)) % 4 == 0);
   static_assert((sizeof(v2) / sizeof(float)) % 4 == 0);
