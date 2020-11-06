@@ -43,7 +43,6 @@ std::chrono::duration<double, std::micro> operate_simd(float* res, float* v1, fl
     __m128 v1_128 = _mm_set_ps(v1[i + 3], v1[i + 2], v1[i + 1], v1[i]); //Load 4 bytes to v1_128 (Loads in reverse order so we input in erverse too)
     __m128 v2_128 = _mm_set_ps(v2[i + 3], v2[i + 2], v2[i + 1], v2[i]); //Load 4 bytes to v2_128 (Loads in reverse order so we input in erverse too)
     __m128 res_128 = _mm_mul_ps(v1_128, v2_128); //Add v1_128 & v2_128 and save in res_128
-    //memcpy((res + i), &res_128, sizeof(res_128)); //Save result from res_128 to res
     _mm_store_ps(res + i, res_128);
   }
   auto end = std::chrono::high_resolution_clock::now();
@@ -52,7 +51,7 @@ std::chrono::duration<double, std::micro> operate_simd(float* res, float* v1, fl
 
 int main()
 {
-  static const unsigned int iterations = 1000000;
+  static const unsigned int iterations = 100000;
   alignas(16) float v1[vecSize];
   alignas(16) float v2[vecSize];
   alignas(16) float res[vecSize];
@@ -74,7 +73,7 @@ int main()
   printNFloatVector("v2", vecSize, v2);
 
   std::vector<double> diffs_vector;
-
+  auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < iterations; ++i) {
     memset(res, 0, sizeof(res));
     memset(res_simd, 0, sizeof(res_simd));
@@ -108,10 +107,12 @@ int main()
       std::cout.unsetf(std::ios::fixed);
     }
   }
-
-  double total = std::accumulate(diffs_vector.begin(), diffs_vector.end(), 0.0f);
-  std::cout << "TOTAL: " << total << std::endl;
-  std::cout << "AVERAGE: " << total / iterations << std::endl;
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::micro> total = start - end;
+  double total_saved = std::accumulate(diffs_vector.begin(), diffs_vector.end(), 0.0f);
+  std::cout << "TOTAL TIME(micro): " << total.count() << std::endl;
+  std::cout << "TOTAL SAVED TIME(micro): " << total_saved << std::endl;
+  std::cout << "AVERAGE: " << total_saved / iterations << std::endl;
 
   printNFloatVector("res", vecSize, res);
   printNFloatVector("res_simd", vecSize, res);
@@ -119,6 +120,3 @@ int main()
   std::string a;
   std::cin >> a;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
