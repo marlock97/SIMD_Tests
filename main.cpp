@@ -1,6 +1,8 @@
 // SIMD_Tests.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-#include <intrin.h>
+//#include <intrin.h>
+#include <emmintrin.h>
+#include <string.h>
 #include <iostream>
 #include <cassert>
 #include <thread>
@@ -10,7 +12,7 @@
 
 static const bool printVectors = false;
 static const bool printIterInfo = false;
-static const unsigned int vecSize = 192;
+static const unsigned int vecSize = 500;
 
 void printNFloatVector(const char* name, unsigned int n, float* v) {
   if (!printVectors)
@@ -40,8 +42,8 @@ std::chrono::duration<double, std::micro> operate(float* res, float* v1, float* 
 std::chrono::duration<double, std::micro> operate_simd(float* res, float* v1, float* v2) {
   auto start = std::chrono::high_resolution_clock::now();
   for (unsigned int i = 0; i < vecSize; i += 4) {
-    __m128 v1_128 = _mm_set_ps(v1[i + 3], v1[i + 2], v1[i + 1], v1[i]); //Load 4 bytes to v1_128 (Loads in reverse order so we input in erverse too)
-    __m128 v2_128 = _mm_set_ps(v2[i + 3], v2[i + 2], v2[i + 1], v2[i]); //Load 4 bytes to v2_128 (Loads in reverse order so we input in erverse too)
+    __m128 v1_128 = _mm_set_ps(v1[i + 3], v1[i + 2], v1[i + 1], v1[i]); //Load 4 bytes to v1_128 (Loads in reverse order so we input in reverse too)
+    __m128 v2_128 = _mm_set_ps(v2[i + 3], v2[i + 2], v2[i + 1], v2[i]); //Load 4 bytes to v2_128 (Loads in reverse order so we input in reverse too)
     __m128 res_128 = _mm_mul_ps(v1_128, v2_128); //Add v1_128 & v2_128 and save in res_128
     _mm_store_ps(res + i, res_128);
   }
